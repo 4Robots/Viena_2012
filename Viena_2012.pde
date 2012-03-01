@@ -24,6 +24,8 @@
 #include <Wire.h>
 #include "RTClib.h"
 #include <LiquidCrystal.h>
+#include <IRremote.h>
+
 
 //Main state machine state list
 #define MAINSTATE_CONFIGURATION  0;
@@ -37,6 +39,7 @@
 
 //Pin configuration
 //int startBtn=16; //Start button on 16 digital port (PortA0), between GND and SIG pins
+int RECV_PIN = 10; //IR Remote reciver pin
 
 //Time constants for algorithm
 long int roundLenght=180*1000; //Round length in 1msec units, i.e. 180*1000 => 180sec => 3min
@@ -55,6 +58,10 @@ int mainState,processingState,processedState;
 LiquidCrystal lcd(32, 30, 28, 26, 24, 22);
 //RTC
 RTC_DS1307 RTC;
+//IR Remote
+IRrecv irrecv(RECV_PIN);
+decode_results results;
+
 void setup()  
 {
   //Setup All Pins
@@ -62,9 +69,9 @@ void setup()
   //digitalWrite(startBtn,HIGH);
   //  pinMode(LED, OUTPUT);  
  
-  Serial.begin(115200);
-  lcd.begin(16, 2);
-  
+  Serial.begin(115200);// Start the UART
+  lcd.begin(16, 2);    // Start the LCD
+  irrecv.enableIRIn(); // Start the IR receiver
 
   //Setup main state machine
   mainState=MAINSTATE_CONFIGURATION;
