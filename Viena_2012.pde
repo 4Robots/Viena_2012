@@ -22,6 +22,8 @@
 //#include <ORDMotors.h>
 //#include <I2C_RGBC_Reader.h>
 #include <Wire.h>
+#include "RTClib.h"
+#include <LiquidCrystal.h>
 
 //Main state machine state list
 #define MAINSTATE_CONFIGURATION  0;
@@ -41,13 +43,18 @@ long int roundLenght=180*1000; //Round length in 1msec units, i.e. 180*1000 => 1
 long int collectTime=120*1000; //Time to collect pucks in 1msec units, after that we must park near our base
 long int releaseTime=170*1000; //Time to release enemy pucks in 1msec units, after that we must park to base and release our pucks
 long int StartTK; //Start Time in sec Unix style
+char buffer[16]; // For LCD 16x2 output
 
 //Debug state, if set - State machine is simplified to MAINSTATE_WAIT_START_PRESS => MAINSTATE_WAIT_START_RELEASE => DEBUGSTATE => EN
 int debugState=0; //int debugState=MAINSTATE_CONFIGURATION
 
 int mainState,processingState,processedState;
 
-
+// Objects
+//Mega   RS, E, DB4, DB5, DB6, DB7
+LiquidCrystal lcd(32, 30, 28, 26, 24, 22);
+//RTC
+RTC_DS1307 RTC;
 void setup()  
 {
   //Setup All Pins
@@ -55,12 +62,30 @@ void setup()
   //digitalWrite(startBtn,HIGH);
   //  pinMode(LED, OUTPUT);  
  
-  Serial.begin(115200);  
+  Serial.begin(115200);
+  lcd.begin(16, 2);
+  
 
   //Setup main state machine
   mainState=MAINSTATE_CONFIGURATION;
   processedState=mainState;
   processingState=mainState;
+  
+  //RTC init
+  Wire.begin();
+  RTC.begin();  
+  if (! RTC.isrunning()) {
+    Serial.println("RTC is NOT running!");
+    lcd.print("RTC is NOT running!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    RTC.adjust(DateTime(__DATE__, __TIME__));
+  }
+  else {
+    Serial.println("RTC is running!");
+    lcd.print("RTC is running!");
+  };
+  delay(1000);
+  lcd.clear();   
 }
 
 //int eps=30;
@@ -69,6 +94,14 @@ void setup()
 
 void loop() //16Hz speed main cycle;
 {
+  DateTime now = RTC.now();  
+  sprintf(buffer,"%02d.%02d.%02d",now.day(),now.month(),now.year());
+  lcd.setCursor(0,0);
+  lcd.print(buffer); 
+  
+  sprintf(buffer,"%02d:%02d:%02d",now.hour(),now.minute(),now.second());              
+  lcd.setCursor(0,1);
+  lcd.print(buffer);
   
   processingState=mainState;
 
